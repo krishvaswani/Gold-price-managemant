@@ -6,18 +6,18 @@
   Usage: {% render 'gold-price-breakup', product: product %}
 {% endcomment %}
 
-{% assign gold_weight    = product.metafields.custom.gold_weight_grams | plus: 0 %}
-{% assign diamond_value  = product.metafields.custom.diamond_value | plus: 0 %}
-{% assign making_fixed   = product.metafields.custom.making_charge_fixed | plus: 0 %}
-{% assign making_percent = product.metafields.custom.making_charge_percent | plus: 0 %}
-{% assign product_purity = product.metafields.custom.gold_purity %}
+{% assign gold_weight    = product.metafields.custom.gold_weight_grams.value | plus: 0 %}
+{% assign diamond_value  = product.metafields.custom.diamond_value.value | plus: 0 %}
+{% assign making_fixed   = product.metafields.custom.making_charge_fixed.value | plus: 0 %}
+{% assign making_percent = product.metafields.custom.making_charge_percent.value | plus: 0 %}
+{% assign product_purity = product.metafields.custom.gold_purity.value %}
 
-{% assign gold_rate_9k   = shop.metafields.custom.gold_rate_9k | plus: 0 %}
-{% assign gold_rate_14k  = shop.metafields.custom.gold_rate_14k | plus: 0 %}
-{% assign gold_rate_18k  = shop.metafields.custom.gold_rate_18k | plus: 0 %}
-{% assign gold_rate_22k  = shop.metafields.custom.gold_rate_22k | plus: 0 %}
-{% assign gold_rate_24k  = shop.metafields.custom.gold_rate_24k | plus: 0 %}
-{% assign gst_percent    = shop.metafields.custom.gst_percent | plus: 0 %}
+{% assign gold_rate_9k   = shop.metafields.custom.gold_rate_9k.value | plus: 0 %}
+{% assign gold_rate_14k  = shop.metafields.custom.gold_rate_14k.value | plus: 0 %}
+{% assign gold_rate_18k  = shop.metafields.custom.gold_rate_18k.value | plus: 0 %}
+{% assign gold_rate_22k  = shop.metafields.custom.gold_rate_22k.value | plus: 0 %}
+{% assign gold_rate_24k  = shop.metafields.custom.gold_rate_24k.value | plus: 0 %}
+{% assign gst_percent    = shop.metafields.custom.gst_percent.value | plus: 0 %}
 
 {% comment %} Check if non-gold product {% endcomment %}
 {% assign has_purity_variant = false %}
@@ -42,11 +42,11 @@
   data-making-percent="{{ making_percent }}"
   data-product-purity="{{ product_purity }}"
   data-has-purity-variant="{{ has_purity_variant }}"
-  data-rate-9k="{{ gold_rate_9k }}"
-  data-rate-14k="{{ gold_rate_14k }}"
-  data-rate-18k="{{ gold_rate_18k }}"
-  data-rate-22k="{{ gold_rate_22k }}"
-  data-rate-24k="{{ gold_rate_24k }}"
+  data-rate9k="{{ gold_rate_9k }}"
+  data-rate14k="{{ gold_rate_14k }}"
+  data-rate18k="{{ gold_rate_18k }}"
+  data-rate22k="{{ gold_rate_22k }}"
+  data-rate24k="{{ gold_rate_24k }}"
   data-gst="{{ gst_percent }}"
 >
   <button
@@ -198,11 +198,11 @@
 <script>
 (function() {
   const RATE_MAP = {
-    '9K':  'rate-9k',
-    '14K': 'rate-14k',
-    '18K': 'rate-18k',
-    '22K': 'rate-22k',
-    '24K': 'rate-24k',
+    '9K':  'rate9k',
+    '14K': 'rate14k',
+    '18K': 'rate18k',
+    '22K': 'rate22k',
+    '24K': 'rate24k',
   };
 
   function fmt(n) {
@@ -210,8 +210,8 @@
   }
 
   function calculate(el, purity, weight) {
-    const rateKey     = RATE_MAP[purity] || 'rate-9k';
-    const goldRate    = parseFloat(el.dataset[rateKey.replace('-', '')]) || 0;
+    const rateKey     = RATE_MAP[purity] || 'rate9k';
+    const goldRate    = parseFloat(el.dataset[rateKey]) || 0;
     const diamondVal  = parseFloat(el.dataset.diamondValue)   || 0;
     const makingFixed = parseFloat(el.dataset.makingFixed)    || 0;
     const makingPct   = parseFloat(el.dataset.makingPercent)  || 0;
