@@ -1,0 +1,332 @@
+{% comment %}
+  Price Breakup Accordion for Gold Jewellery
+  File: snippets/gold-price-breakup.liquid
+  
+  Add this snippet inside your product form, just below the price display.
+  Usage: {% render 'gold-price-breakup', product: product %}
+{% endcomment %}
+
+{% assign gold_weight    = product.metafields.custom.gold_weight_grams | plus: 0 %}
+{% assign diamond_value  = product.metafields.custom.diamond_value | plus: 0 %}
+{% assign making_fixed   = product.metafields.custom.making_charge_fixed | plus: 0 %}
+{% assign making_percent = product.metafields.custom.making_charge_percent | plus: 0 %}
+{% assign product_purity = product.metafields.custom.gold_purity %}
+
+{% assign gold_rate_9k   = shop.metafields.custom.gold_rate_9k | plus: 0 %}
+{% assign gold_rate_14k  = shop.metafields.custom.gold_rate_14k | plus: 0 %}
+{% assign gold_rate_18k  = shop.metafields.custom.gold_rate_18k | plus: 0 %}
+{% assign gold_rate_22k  = shop.metafields.custom.gold_rate_22k | plus: 0 %}
+{% assign gold_rate_24k  = shop.metafields.custom.gold_rate_24k | plus: 0 %}
+{% assign gst_percent    = shop.metafields.custom.gst_percent | plus: 0 %}
+
+{% comment %} Check if non-gold product {% endcomment %}
+{% assign has_purity_variant = false %}
+{% for variant in product.variants %}
+  {% if variant.title == '9K' or variant.title == '14K' or variant.title == '18K' or variant.title == '22K' or variant.title == '24K' %}
+    {% assign has_purity_variant = true %}
+  {% endif %}
+{% endfor %}
+
+{% assign is_gold_product = true %}
+{% if gold_weight == 0 and has_purity_variant == false %}
+  {% assign is_gold_product = false %}
+{% endif %}
+
+{% if is_gold_product %}
+<div
+  id="gold-price-breakup"
+  class="gold-price-breakup"
+  data-gold-weight="{{ gold_weight }}"
+  data-diamond-value="{{ diamond_value }}"
+  data-making-fixed="{{ making_fixed }}"
+  data-making-percent="{{ making_percent }}"
+  data-product-purity="{{ product_purity }}"
+  data-has-purity-variant="{{ has_purity_variant }}"
+  data-rate-9k="{{ gold_rate_9k }}"
+  data-rate-14k="{{ gold_rate_14k }}"
+  data-rate-18k="{{ gold_rate_18k }}"
+  data-rate-22k="{{ gold_rate_22k }}"
+  data-rate-24k="{{ gold_rate_24k }}"
+  data-gst="{{ gst_percent }}"
+>
+  <button
+    type="button"
+    class="gold-breakup-toggle"
+    aria-expanded="false"
+    aria-controls="gold-breakup-content"
+  >
+    <span class="gold-breakup-label">Price Breakup</span>
+    <span class="gold-breakup-total">
+      <span class="gold-total-price">Calculating...</span>
+    </span>
+    <span class="gold-breakup-arrow">▾</span>
+  </button>
+
+  <div id="gold-breakup-content" class="gold-breakup-content" hidden>
+    <table class="gold-breakup-table">
+      <tbody>
+        <tr class="gold-row">
+          <td class="gold-row-label">
+            Gold
+            (<span class="bd-weight">—</span>g ×
+             ₹<span class="bd-rate">—</span>/g
+             · <span class="bd-purity">—</span>)
+          </td>
+          <td class="gold-row-value">₹<span class="bd-gold-cost">—</span></td>
+        </tr>
+        <tr class="diamond-row" style="display:none;">
+          <td class="gold-row-label">Diamond Value</td>
+          <td class="gold-row-value">₹<span class="bd-diamond">—</span></td>
+        </tr>
+        <tr class="making-row">
+          <td class="gold-row-label">Making Charges (<span class="bd-making-label">—</span>)</td>
+          <td class="gold-row-value">₹<span class="bd-making">—</span></td>
+        </tr>
+        <tr class="subtotal-row">
+          <td class="gold-row-label">Subtotal</td>
+          <td class="gold-row-value">₹<span class="bd-subtotal">—</span></td>
+        </tr>
+        <tr class="gst-row">
+          <td class="gold-row-label">GST (<span class="bd-gst-pct">—</span>%)</td>
+          <td class="gold-row-value">₹<span class="bd-gst-amt">—</span></td>
+        </tr>
+        <tr class="total-row">
+          <td class="gold-row-label"><strong>Final Price</strong></td>
+          <td class="gold-row-value"><strong>₹<span class="bd-final">—</span></strong></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="gold-breakup-note">
+      Gold rate updated daily. Price shown includes all applicable charges.
+    </p>
+  </div>
+</div>
+
+<style>
+.gold-price-breakup {
+  margin: 16px 0;
+  border: 1px solid #e8e0cc;
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 14px;
+}
+
+.gold-breakup-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: #fdf9f0;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 12px;
+  transition: background 0.2s;
+}
+
+.gold-breakup-toggle:hover { background: #faf3e3; }
+
+.gold-breakup-label {
+  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gold-breakup-total {
+  flex: 1;
+  text-align: right;
+  color: #c9a84c;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.gold-breakup-arrow {
+  color: #999;
+  font-size: 12px;
+  transition: transform 0.25s;
+}
+
+.gold-breakup-toggle[aria-expanded="true"] .gold-breakup-arrow {
+  transform: rotate(180deg);
+}
+
+.gold-breakup-content {
+  border-top: 1px solid #e8e0cc;
+  background: #fff;
+  padding: 0 18px;
+}
+
+.gold-breakup-content[hidden] { display: none; }
+.gold-breakup-content:not([hidden]) { display: block; }
+
+.gold-breakup-table {
+  width: 100%;
+  border-collapse: collapse;
+  padding: 8px 0;
+}
+
+.gold-row-label { padding: 10px 0; color: #555; }
+.gold-row-value { padding: 10px 0; text-align: right; color: #1a1a1a; font-weight: 500; }
+
+.subtotal-row .gold-row-label,
+.subtotal-row .gold-row-value {
+  border-top: 1px dashed #e0d8c8;
+  padding-top: 12px;
+  color: #333;
+}
+
+.total-row .gold-row-label,
+.total-row .gold-row-value {
+  border-top: 2px solid #1a1a1a;
+  padding-top: 12px;
+  font-size: 15px;
+  color: #1a1a1a;
+}
+
+.gold-breakup-note {
+  padding: 10px 0 14px;
+  font-size: 11px;
+  color: #aaa;
+  border-top: 1px solid #f0ece4;
+  margin-top: 4px;
+}
+</style>
+
+<script>
+(function() {
+  const RATE_MAP = {
+    '9K':  'rate-9k',
+    '14K': 'rate-14k',
+    '18K': 'rate-18k',
+    '22K': 'rate-22k',
+    '24K': 'rate-24k',
+  };
+
+  function fmt(n) {
+    return Math.round(n).toLocaleString('en-IN');
+  }
+
+  function calculate(el, purity, weight) {
+    const rateKey     = RATE_MAP[purity] || 'rate-9k';
+    const goldRate    = parseFloat(el.dataset[rateKey.replace('-', '')]) || 0;
+    const diamondVal  = parseFloat(el.dataset.diamondValue)   || 0;
+    const makingFixed = parseFloat(el.dataset.makingFixed)    || 0;
+    const makingPct   = parseFloat(el.dataset.makingPercent)  || 0;
+    const gstPct      = parseFloat(el.dataset.gst)           || 0;
+
+    const goldCost   = weight * goldRate;
+    const base       = goldCost + diamondVal;
+    const making     = makingFixed > 0 ? makingFixed : (base * makingPct / 100);
+    const output     = base + making;
+    const gstAmt     = output * gstPct / 100;
+    const finalPrice = output + gstAmt;
+
+    return { goldCost, diamondVal, base, making, makingFixed, makingPct, output, gstAmt, gstPct, finalPrice, goldRate, purity, weight };
+  }
+
+  function render(el, data) {
+    const q = s => el.querySelector(s);
+
+    // Toggle button total
+    el.querySelector('.gold-total-price').textContent = '₹' + fmt(data.finalPrice);
+
+    // Rows
+    q('.bd-weight').textContent      = data.weight;
+    q('.bd-rate').textContent        = fmt(data.goldRate);
+    q('.bd-purity').textContent      = data.purity;
+    q('.bd-gold-cost').textContent   = fmt(data.goldCost);
+
+    // Diamond row
+    if (data.diamondVal > 0) {
+      el.querySelector('.diamond-row').style.display = '';
+      q('.bd-diamond').textContent = fmt(data.diamondVal);
+    } else {
+      el.querySelector('.diamond-row').style.display = 'none';
+    }
+
+    // Making
+    const makingLabel = data.makingFixed > 0 ? 'Fixed' : `${data.makingPct}%`;
+    q('.bd-making-label').textContent = makingLabel;
+    q('.bd-making').textContent       = fmt(data.making);
+
+    // Totals
+    q('.bd-subtotal').textContent  = fmt(data.output);
+    q('.bd-gst-pct').textContent   = data.gstPct;
+    q('.bd-gst-amt').textContent   = fmt(data.gstAmt);
+    q('.bd-final').textContent     = fmt(data.finalPrice);
+  }
+
+  function init() {
+    const el = document.getElementById('gold-price-breakup');
+    if (!el) return;
+
+    const hasPurityVariant  = el.dataset.hasPurityVariant === 'true';
+    const defaultWeight     = parseFloat(el.dataset.goldWeight)    || 0;
+    const productPurity     = el.dataset.productPurity?.trim().toUpperCase() || '9K';
+
+    // Initial render
+    let currentPurity = hasPurityVariant ? '9K' : (productPurity || '9K');
+    let currentWeight = defaultWeight;
+
+    // If purity variant, detect from selected variant
+    if (hasPurityVariant) {
+      const selected = document.querySelector('input[name="id"]:checked, select[name="id"]');
+      if (selected) {
+        const variantTitle = selected.dataset.variantTitle || '';
+        if (RATE_MAP[variantTitle]) { currentPurity = variantTitle; }
+      }
+    }
+
+    const data = calculate(el, currentPurity, currentWeight);
+    render(el, data);
+
+    // Accordion toggle
+    const btn     = el.querySelector('.gold-breakup-toggle');
+    const content = el.querySelector('.gold-breakup-content');
+    btn.addEventListener('click', () => {
+      const open = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!open));
+      if (!open) content.removeAttribute('hidden');
+      else content.setAttribute('hidden', '');
+    });
+
+    // Listen to variant changes (Horizon theme fires this event)
+    document.addEventListener('variant:change', function(e) {
+      if (!hasPurityVariant) return;
+      const variant = e.detail?.variant;
+      if (!variant) return;
+
+      const purity = variant.title?.trim().toUpperCase();
+      if (!RATE_MAP[purity]) return;
+
+      // Get variant weight from data attribute if available
+      // (Horizon renders variant data in JSON — we read from the variant object)
+      const newData = calculate(el, purity, defaultWeight);
+      render(el, newData);
+    });
+
+    // Fallback: also listen to native select/radio changes
+    document.querySelectorAll('select[name="id"], input[name="id"]').forEach(input => {
+      input.addEventListener('change', function() {
+        if (!hasPurityVariant) return;
+        const label = this.options ? this.options[this.selectedIndex]?.text : this.dataset.variantTitle;
+        const purity = label?.trim().toUpperCase();
+        if (RATE_MAP[purity]) {
+          const newData = calculate(el, purity, defaultWeight);
+          render(el, newData);
+        }
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+{% endif %}
