@@ -3,17 +3,13 @@ import Head from 'next/head';
 
 const PURITIES = [
   { key: 'gold_rate_9k',  label: '9K Gold',  karat: 9  },
-  { key: 'gold_rate_14k', label: '14K Gold', karat: 14 },
-  { key: 'gold_rate_18k', label: '18K Gold', karat: 18 },
-  { key: 'gold_rate_22k', label: '22K Gold', karat: 22 },
-  { key: 'gold_rate_24k', label: '24K Gold', karat: 24 },
 ];
 
 export default function Home() {
   const [authed,    setAuthed]    = useState(false);
   const [password,  setPassword]  = useState('');
   const [authError, setAuthError] = useState('');
-  const [rates,     setRates]     = useState({ gold_rate_9k:'', gold_rate_14k:'', gold_rate_18k:'', gold_rate_22k:'', gold_rate_24k:'', gst_percent:'' });
+  const [rates,     setRates]     = useState({ gold_rate_9k: '', gst_percent: '' });
   const [saving,    setSaving]    = useState(false);
   const [running,   setRunning]   = useState(false);
   const [log,       setLog]       = useState([]);
@@ -168,8 +164,8 @@ export default function Home() {
           {/* Gold Rates Card */}
           <div className="card">
             <div className="card-header">
-              <h2 className="card-title">Gold Rates — Today</h2>
-              <p className="card-sub">Enter the rate per gram for each purity separately</p>
+              <h2 className="card-title">Gold Rate — 9K (Today)</h2>
+              <p className="card-sub">Enter the 9K gold rate per gram (changes daily)</p>
             </div>
 
             <div className="rates-grid">
@@ -229,15 +225,14 @@ export default function Home() {
             </div>
 
             <div className="formula-box">
-              <p className="formula-title">Formula being applied:</p>
+              <p className="formula-title">Formula being applied (9K Gold Only):</p>
               <p className="formula-text">
-                <strong>Gold Cost</strong> = Weight × Gold Rate (by purity)<br />
-                <strong>Base</strong> = Gold Cost + Diamond Value<br />
-                <strong>Making</strong> = Fixed Amount <em>or</em> Base × Making %<br />
-                <strong>Output</strong> = Base + Making<br />
+                <strong>TGP</strong> = Gold Price (9K) × Weight of Metal<br />
+                <strong>TGPM</strong> = TGP + (Fixed Making Charge × Weight of Metal)<br />
+                <strong>Output</strong> = TGPM + Diamond Price (if available) + Stone Price (if available)<br />
                 <strong>Final Price</strong> = Output + GST %
               </p>
-              <p className="formula-note">Non-gold products (no weight, no purity variant) are skipped automatically.</p>
+              <p className="formula-note">Products without gold weight are skipped automatically.</p>
             </div>
 
             <button
@@ -281,9 +276,8 @@ export default function Home() {
               <tbody>
                 <tr><td>gold_weight_grams</td><td>Weight of gold in grams</td></tr>
                 <tr><td>diamond_value</td><td>Direct ₹ value of diamond (0 if none)</td></tr>
-                <tr><td>making_charge_fixed</td><td>Fixed making charge in ₹ (takes priority)</td></tr>
-                <tr><td>making_charge_percent</td><td>Making charge % (used if fixed is 0)</td></tr>
-                <tr><td>gold_purity</td><td>Only for non-variant products (9K/14K etc). Leave blank = 9K default</td></tr>
+                <tr><td>stone_price</td><td>Fixed ₹ value of stones (0 if none)</td></tr>
+                <tr><td>making_charge_fixed</td><td>Fixed making charge per gram of gold in ₹</td></tr>
               </tbody>
             </table>
           </div>
@@ -326,7 +320,7 @@ const globalStyles = `
   .card-footer { display: flex; align-items: center; justify-content: flex-end; gap: 16px; margin-top: 28px; border-top: 1px solid #f0ece4; padding-top: 24px; }
 
   /* Rates Grid */
-  .rates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .rates-grid { display: grid; grid-template-columns: 1fr; gap: 16px; max-width: 320px; }
   .rate-item { background: #fdf9f0; border: 1px solid #f0e8d0; border-radius: 10px; padding: 16px 20px; }
   .rate-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
   .rate-karat { font-weight: 600; font-size: 15px; }

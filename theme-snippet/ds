@@ -1,0 +1,335 @@
+{% comment %}
+  Price Breakup Accordion for Gold Jewellery
+  File: snippets/gold-price-breakup.liquid
+  Usage: {% render 'gold-price-breakup', product: product %}
+{% endcomment %}
+
+{% assign gold_weight    = product.metafields.custom.gold_weight_grams | plus: 0 %}
+{% assign diamond_value  = product.metafields.custom.diamond_value | plus: 0 %}
+{% assign making_fixed   = product.metafields.custom.making_charge_fixed | plus: 0 %}
+{% assign making_percent = product.metafields.custom.making_charge_percent | plus: 0 %}
+{% assign product_purity = product.metafields.custom.gold_purity | strip | upcase %}
+
+{% assign gold_rate_9k   = shop.metafields.custom.gold_rate_9k | plus: 0 %}
+{% assign gold_rate_14k  = shop.metafields.custom.gold_rate_14k | plus: 0 %}
+{% assign gold_rate_18k  = shop.metafields.custom.gold_rate_18k | plus: 0 %}
+{% assign gold_rate_22k  = shop.metafields.custom.gold_rate_22k | plus: 0 %}
+{% assign gold_rate_24k  = shop.metafields.custom.gold_rate_24k | plus: 0 %}
+{% assign gst_percent    = shop.metafields.custom.gst_percent | plus: 0 %}
+
+{% assign has_purity_variant = false %}
+{% for variant in product.variants %}
+  {% assign vtitle = variant.title | strip | upcase %}
+  {% if vtitle == '9K' or vtitle == '14K' or vtitle == '18K' or vtitle == '22K' or vtitle == '24K' %}
+    {% assign has_purity_variant = true %}
+  {% endif %}
+{% endfor %}
+
+{% assign is_gold_product = true %}
+{% if gold_weight == 0 and has_purity_variant == false %}
+  {% assign is_gold_product = false %}
+{% endif %}
+
+{% if is_gold_product %}
+
+<script>
+  window.__goldRates = {
+    "9K":  {{ gold_rate_9k  | default: 0 }},
+    "14K": {{ gold_rate_14k | default: 0 }},
+    "18K": {{ gold_rate_18k | default: 0 }},
+    "22K": {{ gold_rate_22k | default: 0 }},
+    "24K": {{ gold_rate_24k | default: 0 }}
+  };
+  window.__goldConfig = {
+    goldWeight:      {{ gold_weight    | default: 0 }},
+    diamondValue:    {{ diamond_value  | default: 0 }},
+    makingFixed:     {{ making_fixed   | default: 0 }},
+    makingPercent:   {{ making_percent | default: 0 }},
+    productPurity:   "{{ product_purity | default: '9K' }}",
+    hasPurityVariant: {{ has_purity_variant }},
+    gstPercent:      {{ gst_percent | default: 0 }}
+  };
+
+  // Build variant map line by line — no trailing comma issues
+  window.__variantPurityMap = {};
+  {% for variant in product.variants %}
+    {% assign vtitle = variant.title | strip | upcase %}
+    {% if vtitle == '9K' or vtitle == '14K' or vtitle == '18K' or vtitle == '22K' or vtitle == '24K' %}
+      {% assign vweight = variant.metafields.custom.variant_gold_weight | plus: 0 %}
+      {% if vweight == 0 %}{% assign vweight = gold_weight %}{% endif %}
+      window.__variantPurityMap["{{ variant.id }}"] = { purity: "{{ vtitle }}", weight: {{ vweight }} };
+    {% endif %}
+  {% endfor %}
+</script>
+
+<div id="gold-price-breakup" class="gold-price-breakup">
+  <button
+    type="button"
+    class="gold-breakup-toggle"
+    aria-expanded="false"
+    aria-controls="gold-breakup-content"
+  >
+    <span class="gold-breakup-label">Price Breakup</span>
+    <span class="gold-breakup-total">
+      <span class="gold-total-price">Calculating...</span>
+    </span>
+    <span class="gold-breakup-arrow">▾</span>
+  </button>
+
+  <div id="gold-breakup-content" class="gold-breakup-content" hidden>
+    <table class="gold-breakup-table">
+      <tbody>
+        <tr class="gold-row">
+          <td class="gold-row-label">
+            Gold (<span class="bd-weight">—</span>g × ₹<span class="bd-rate">—</span>/g · <span class="bd-purity">—</span>)
+          </td>
+          <td class="gold-row-value">₹<span class="bd-gold-cost">—</span></td>
+        </tr>
+        <tr class="diamond-row" style="display:none;">
+          <td class="gold-row-label">Diamond Value</td>
+          <td class="gold-row-value">₹<span class="bd-diamond">—</span></td>
+        </tr>
+        <tr class="making-row">
+          <td class="gold-row-label">Making Charges (<span class="bd-making-label">—</span>)</td>
+          <td class="gold-row-value">₹<span class="bd-making">—</span></td>
+        </tr>
+        <tr class="subtotal-row">
+          <td class="gold-row-label">Subtotal</td>
+          <td class="gold-row-value">₹<span class="bd-subtotal">—</span></td>
+        </tr>
+        <tr class="gst-row">
+          <td class="gold-row-label">GST (<span class="bd-gst-pct">—</span>%)</td>
+          <td class="gold-row-value">₹<span class="bd-gst-amt">—</span></td>
+        </tr>
+        <tr class="total-row">
+          <td class="gold-row-label"><strong>Final Price</strong></td>
+          <td class="gold-row-value"><strong>₹<span class="bd-final">—</span></strong></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="gold-breakup-note">Gold rate updated daily. Price includes all applicable charges.</p>
+  </div>
+</div>
+
+<style>
+.gold-price-breakup {
+  margin: 16px 0;
+  border: 1px solid #e8e0cc;
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 14px;
+}
+.gold-breakup-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: #fdf9f0;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 12px;
+  transition: background 0.2s;
+}
+.gold-breakup-toggle:hover { background: #faf3e3; }
+.gold-breakup-label {
+  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.gold-breakup-total {
+  flex: 1;
+  text-align: right;
+  color: #c9a84c;
+  font-weight: 700;
+  font-size: 15px;
+}
+.gold-breakup-arrow {
+  color: #999;
+  font-size: 12px;
+  transition: transform 0.25s;
+}
+.gold-breakup-toggle[aria-expanded="true"] .gold-breakup-arrow { transform: rotate(180deg); }
+.gold-breakup-content { border-top: 1px solid #e8e0cc; background: #fff; padding: 0 18px; }
+.gold-breakup-content[hidden] { display: none; }
+.gold-breakup-content:not([hidden]) { display: block; }
+.gold-breakup-table { width: 100%; border-collapse: collapse; }
+.gold-row-label { padding: 10px 0; color: #555; }
+.gold-row-value { padding: 10px 0; text-align: right; color: #1a1a1a; font-weight: 500; }
+.subtotal-row .gold-row-label,
+.subtotal-row .gold-row-value { border-top: 1px dashed #e0d8c8; padding-top: 12px; color: #333; }
+.total-row .gold-row-label,
+.total-row .gold-row-value { border-top: 2px solid #1a1a1a; padding-top: 12px; font-size: 15px; color: #1a1a1a; }
+.gold-breakup-note { padding: 10px 0 14px; font-size: 11px; color: #aaa; border-top: 1px solid #f0ece4; margin-top: 4px; }
+</style>
+
+<script>
+(function() {
+  const VALID_PURITIES = ['9K','14K','18K','22K','24K'];
+
+  function fmt(n) {
+    return Math.round(n).toLocaleString('en-IN');
+  }
+
+  function calculate(purity, weight) {
+    const cfg      = window.__goldConfig;
+    const rates    = window.__goldRates;
+    const goldRate = rates[purity] || rates['9K'] || 0;
+    const dv       = cfg.diamondValue  || 0;
+    const mf       = cfg.makingFixed   || 0;
+    const mp       = cfg.makingPercent || 0;
+    const gp       = cfg.gstPercent    || 0;
+
+    const goldCost   = weight * goldRate;
+    const base       = goldCost + dv;
+    const making     = mf > 0 ? mf : (base * mp / 100);
+    const output     = base + making;
+    const gstAmt     = output * gp / 100;
+    const finalPrice = output + gstAmt;
+
+    return { goldCost, dv, base, making, mf, mp, output, gstAmt, gp, finalPrice, goldRate, purity, weight };
+  }
+
+  function render(data) {
+    const el = document.getElementById('gold-price-breakup');
+    if (!el) return;
+    const q = s => el.querySelector(s);
+
+    q('.gold-total-price').textContent = '₹' + fmt(data.finalPrice);
+    q('.bd-weight').textContent        = data.weight;
+    q('.bd-rate').textContent          = fmt(data.goldRate);
+    q('.bd-purity').textContent        = data.purity;
+    q('.bd-gold-cost').textContent     = fmt(data.goldCost);
+
+    if (data.dv > 0) {
+      el.querySelector('.diamond-row').style.display = '';
+      q('.bd-diamond').textContent = fmt(data.dv);
+    } else {
+      el.querySelector('.diamond-row').style.display = 'none';
+    }
+
+    q('.bd-making-label').textContent = data.mf > 0 ? 'Fixed' : data.mp + '%';
+    q('.bd-making').textContent       = fmt(data.making);
+    q('.bd-subtotal').textContent     = fmt(data.output);
+    q('.bd-gst-pct').textContent      = data.gp;
+    q('.bd-gst-amt').textContent      = fmt(data.gstAmt);
+    q('.bd-final').textContent        = fmt(data.finalPrice);
+  }
+
+  // The SINGLE source of truth for current purity — read from the active variant
+  function getCurrentPurityAndWeight() {
+    const cfg = window.__goldConfig;
+    const map = window.__variantPurityMap || {};
+
+    // Try 1: hidden input[name="id"]  
+    const hiddenInput = document.querySelector('input[name="id"]');
+    if (hiddenInput && hiddenInput.value) {
+      const entry = map[hiddenInput.value];
+      if (entry) return entry;
+    }
+
+    // Try 2: URL param ?variant=
+    const urlVariant = new URLSearchParams(window.location.search).get('variant');
+    if (urlVariant && map[urlVariant]) return map[urlVariant];
+
+    // Try 3: Look at which variant swatch/button is visually selected in the DOM
+    // Horizon marks selected variant options with aria-pressed="true" or a selected class
+    const activeBtn = document.querySelector('[aria-pressed="true"], .variant-swatch--active, .swatch--active, [data-selected="true"]');
+    if (activeBtn) {
+      const label = (activeBtn.dataset.variantTitle || activeBtn.textContent || '').trim().toUpperCase();
+      if (VALID_PURITIES.includes(label)) {
+        return { purity: label, weight: cfg.goldWeight };
+      }
+    }
+
+    // Try 4: Check all variant map entries and find the first one
+    const firstKey = Object.keys(map)[0];
+    if (firstKey) return map[firstKey];
+
+    // Try 5: just use product purity / default 9K
+    return { purity: cfg.productPurity || '9K', weight: cfg.goldWeight };
+  }
+
+  function renderCurrent() {
+    const cfg   = window.__goldConfig;
+    const entry = getCurrentPurityAndWeight();
+    render(calculate(entry.purity, entry.weight || cfg.goldWeight));
+  }
+
+  function init() {
+    const el = document.getElementById('gold-price-breakup');
+    if (!el) return;
+
+    const cfg = window.__goldConfig;
+
+    // Initial render
+    if (cfg.hasPurityVariant) {
+      renderCurrent();
+    } else {
+      render(calculate(cfg.productPurity || '9K', cfg.goldWeight));
+    }
+
+    // Accordion toggle
+    const btn     = el.querySelector('.gold-breakup-toggle');
+    const content = el.querySelector('.gold-breakup-content');
+    btn.addEventListener('click', () => {
+      const open = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!open));
+      if (!open) content.removeAttribute('hidden');
+      else content.setAttribute('hidden', '');
+    });
+
+    if (!cfg.hasPurityVariant) return;
+
+    // ── Listen for variant changes — ALL possible Horizon events ─────────────
+
+    // Event 1: Horizon custom event
+    document.addEventListener('variant:change', function(e) {
+      const v = e.detail?.variant;
+      if (!v) return;
+      const purity = (v.title || '').trim().toUpperCase();
+      const map    = window.__variantPurityMap || {};
+      const entry  = map[String(v.id)] || (VALID_PURITIES.includes(purity) ? { purity, weight: cfg.goldWeight } : null);
+      if (entry) render(calculate(entry.purity, entry.weight || cfg.goldWeight));
+    });
+
+    // Event 2: Shopify standard event
+    document.addEventListener('change:variant', function(e) {
+      renderCurrent();
+    });
+
+    // Event 3: Watch hidden input for value changes via polling
+    // (Horizon sets input[name="id"] programmatically — no DOM event fires)
+    const hiddenInput = document.querySelector('input[name="id"]');
+    if (hiddenInput) {
+      let lastVal = hiddenInput.value;
+      setInterval(function() {
+        const currentVal = hiddenInput.value;
+        if (currentVal && currentVal !== lastVal) {
+          lastVal = currentVal;
+          renderCurrent();
+        }
+      }, 250);
+    }
+
+    // Event 4: Watch for clicks on variant buttons directly (most reliable for Horizon)
+    // Horizon variant buttons have data-option-value or similar
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('[data-option-value], .variant-swatch, [data-variant-id]');
+      if (!btn) return;
+      // Small delay to let Horizon update the hidden input first
+      setTimeout(renderCurrent, 50);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+{% endif %}
