@@ -8,62 +8,29 @@
 
 {% assign gold_weight    = product.metafields.custom.gold_weight_grams | plus: 0 %}
 {% assign diamond_value  = product.metafields.custom.diamond_value | plus: 0 %}
+{% assign stone_price    = product.metafields.custom.stone_price | plus: 0 %}
 {% assign making_fixed   = product.metafields.custom.making_charge_fixed | plus: 0 %}
-{% assign making_percent = product.metafields.custom.making_charge_percent | plus: 0 %}
-{% assign product_purity = product.metafields.custom.gold_purity %}
 
 {% assign gold_rate_9k   = shop.metafields.custom.gold_rate_9k | plus: 0 %}
-{% assign gold_rate_14k  = shop.metafields.custom.gold_rate_14k | plus: 0 %}
-{% assign gold_rate_18k  = shop.metafields.custom.gold_rate_18k | plus: 0 %}
-{% assign gold_rate_22k  = shop.metafields.custom.gold_rate_22k | plus: 0 %}
-{% assign gold_rate_24k  = shop.metafields.custom.gold_rate_24k | plus: 0 %}
 {% assign gst_percent    = shop.metafields.custom.gst_percent | plus: 0 %}
 
 {% comment %} Check if non-gold product {% endcomment %}
-{% assign has_purity_variant = false %}
-{% for variant in product.variants %}
-  {% if variant.title == '9K' or variant.title == '14K' or variant.title == '18K' or variant.title == '22K' or variant.title == '24K' %}
-    {% assign has_purity_variant = true %}
-  {% endif %}
-{% endfor %}
-
 {% assign is_gold_product = true %}
-{% if gold_weight == 0 and has_purity_variant == false %}
+{% if gold_weight == 0 %}
   {% assign is_gold_product = false %}
 {% endif %}
 
 {% if is_gold_product %}
 
-{% comment %} Embed all rates as a JSON object to avoid dataset camelCase issues {% endcomment %}
+{% comment %} Embed rates and config as JSON {% endcomment %}
 <script>
-  window.__goldRates = {
-    "9K":  {{ gold_rate_9k }},
-    "14K": {{ gold_rate_14k }},
-    "18K": {{ gold_rate_18k }},
-    "22K": {{ gold_rate_22k }},
-    "24K": {{ gold_rate_24k }}
-  };
   window.__goldConfig = {
-    goldWeight:    {{ gold_weight }},
-    diamondValue:  {{ diamond_value }},
-    makingFixed:   {{ making_fixed }},
-    makingPercent: {{ making_percent }},
-    productPurity: "{{ product_purity | default: '9K' | upcase }}",
-    hasPurityVariant: {{ has_purity_variant }},
-    gstPercent:    {{ gst_percent }}
-  };
-
-  {% comment %} Embed all variant purity+weight data from Liquid so JS can read on page load {% endcomment %}
-  window.__variantPurityMap = {
-    {% for variant in product.variants %}
-      {% assign vtitle = variant.title | upcase %}
-      {% if vtitle == '9K' or vtitle == '14K' or vtitle == '18K' or vtitle == '22K' or vtitle == '24K' %}
-        "{{ variant.id }}": {
-          "purity": "{{ vtitle }}",
-          "weight": {{ variant.metafields.custom.variant_gold_weight | default: gold_weight | plus: 0 }}
-        }{% unless forloop.last %},{% endunless %}
-      {% endif %}
-    {% endfor %}
+    goldRate:    {{ gold_rate_9k }},
+    goldWeight:  {{ gold_weight }},
+    diamondValue: {{ diamond_value }},
+    stonePrice:  {{ stone_price }},
+    makingFixed: {{ making_fixed }},
+    gstPercent:  {{ gst_percent }}
   };
 </script>
 
@@ -90,27 +57,29 @@
       <tbody>
         <tr class="gold-row">
           <td class="gold-row-label">
-            Gold
-            (<span class="bd-weight">—</span>g ×
-             ₹<span class="bd-rate">—</span>/g
-             · <span class="bd-purity">—</span>)
+            Gold (9K)
+            (<span class="bd-weight">—</span>g × ₹<span class="bd-rate">—</span>/g)
           </td>
           <td class="gold-row-value">₹<span class="bd-gold-cost">—</span></td>
+        </tr>
+        <tr class="making-row">
+          <td class="gold-row-label">Making Charges (Fixed)</td>
+          <td class="gold-row-value">₹<span class="bd-making">—</span></td>
         </tr>
         <tr class="diamond-row" style="display:none;">
           <td class="gold-row-label">Diamond Value</td>
           <td class="gold-row-value">₹<span class="bd-diamond">—</span></td>
         </tr>
-        <tr class="making-row">
-          <td class="gold-row-label">Making Charges (<span class="bd-making-label">—</span>)</td>
-          <td class="gold-row-value">₹<span class="bd-making">—</span></td>
+        <tr class="stone-row" style="display:none;">
+          <td class="gold-row-label">Stone Price</td>
+          <td class="gold-row-value">₹<span class="bd-stone">—</span></td>
         </tr>
         <tr class="subtotal-row">
           <td class="gold-row-label">Subtotal</td>
           <td class="gold-row-value">₹<span class="bd-subtotal">—</span></td>
         </tr>
         <tr class="gst-row">
-          <td class="gold-row-label">GST (<span class="bd-gst-pct">—</span>%)</td>
+          <td class="gold-row-label">IGST (<span class="bd-gst-pct">—</span>%)</td>
           <td class="gold-row-value">₹<span class="bd-gst-amt">—</span></td>
         </tr>
         <tr class="total-row">
@@ -120,7 +89,7 @@
       </tbody>
     </table>
     <p class="gold-breakup-note">
-      Gold rate updated daily. Price shown includes all applicable charges.
+      Gold rate updated daily. Final price includes all applicable charges and IGST.
     </p>
   </div>
 </div>
@@ -220,29 +189,26 @@
 
 <script>
 (function() {
-  const VALID_PURITIES = ['9K','14K','18K','22K','24K'];
-
   function fmt(n) {
     return Math.round(n).toLocaleString('en-IN');
   }
 
-  function calculate(purity, weight) {
+  function calculate(weight) {
     const cfg         = window.__goldConfig;
-    const rates       = window.__goldRates;
-    const goldRate    = rates[purity] || rates['9K'] || 0;
-    const diamondVal  = cfg.diamondValue  || 0;
-    const makingFixed = cfg.makingFixed   || 0;
-    const makingPct   = cfg.makingPercent || 0;
-    const gstPct      = cfg.gstPercent    || 0;
+    const goldRate    = cfg.goldRate   || 0;
+    const diamondVal  = cfg.diamondValue || 0;
+    const stoneVal    = cfg.stonePrice || 0;
+    const makingFixed = cfg.makingFixed || 0;
+    const gstPct      = cfg.gstPercent || 0;
 
-    const goldCost   = weight * goldRate;
-    const base       = goldCost + diamondVal;
-    const making     = makingFixed > 0 ? makingFixed : (base * makingPct / 100);
-    const output     = base + making;
+    const tgp        = weight * goldRate;
+    const makingCharge = makingFixed * weight;
+    const tgpm       = tgp + makingCharge;
+    const output     = tgpm + diamondVal + stoneVal;
     const gstAmt     = output * gstPct / 100;
     const finalPrice = output + gstAmt;
 
-    return { goldCost, diamondVal, base, making, makingFixed, makingPct, output, gstAmt, gstPct, finalPrice, goldRate, purity, weight };
+    return { tgp, makingCharge, diamondVal, stoneVal, output, gstAmt, gstPct, finalPrice, goldRate, weight };
   }
 
   function render(el, data) {
@@ -252,8 +218,8 @@
 
     q('.bd-weight').textContent    = data.weight;
     q('.bd-rate').textContent      = fmt(data.goldRate);
-    q('.bd-purity').textContent    = data.purity;
-    q('.bd-gold-cost').textContent = fmt(data.goldCost);
+    q('.bd-gold-cost').textContent = fmt(data.tgp);
+    q('.bd-making').textContent    = fmt(data.makingCharge);
 
     if (data.diamondVal > 0) {
       el.querySelector('.diamond-row').style.display = '';
@@ -262,9 +228,12 @@
       el.querySelector('.diamond-row').style.display = 'none';
     }
 
-    const makingLabel = data.makingFixed > 0 ? 'Fixed' : `${data.makingPct}%`;
-    q('.bd-making-label').textContent = makingLabel;
-    q('.bd-making').textContent       = fmt(data.making);
+    if (data.stoneVal > 0) {
+      el.querySelector('.stone-row').style.display = '';
+      q('.bd-stone').textContent = fmt(data.stoneVal);
+    } else {
+      el.querySelector('.stone-row').style.display = 'none';
+    }
 
     q('.bd-subtotal').textContent = fmt(data.output);
     q('.bd-gst-pct').textContent  = data.gstPct;
@@ -272,62 +241,14 @@
     q('.bd-final').textContent    = fmt(data.finalPrice);
   }
 
-  // Get currently selected variant ID from Horizon theme
-  function getSelectedVariantId() {
-    // Horizon uses a hidden input or the URL
-    const hiddenInput = document.querySelector('input[name="id"]');
-    if (hiddenInput) return hiddenInput.value;
-
-    // Fallback: read from URL ?variant=XXXXX
-    const params = new URLSearchParams(window.location.search);
-    return params.get('variant');
-  }
-
-  // Get purity from variant ID using our Liquid-embedded map
-  function getPurityFromVariantId(variantId) {
-    const map = window.__variantPurityMap || {};
-    const entry = map[String(variantId)];
-    return entry || null;
-  }
-
-  function updateFromVariantId(el, variantId) {
-    const cfg = window.__goldConfig;
-    const entry = getPurityFromVariantId(variantId);
-    if (entry) {
-      const data = calculate(entry.purity, entry.weight || cfg.goldWeight);
-      render(el, data);
-    }
-  }
-
   function init() {
     const el = document.getElementById('gold-price-breakup');
     if (!el) return;
 
-    const cfg            = window.__goldConfig;
-    const hasPurityVariant = el.dataset.hasPurityVariant === 'true';
+    const cfg = window.__goldConfig;
 
-    // ── Initial render ────────────────────────────────────────────────────────
-    if (hasPurityVariant) {
-      // On page load — detect which variant is selected
-      const variantId = getSelectedVariantId();
-      if (variantId && getPurityFromVariantId(variantId)) {
-        updateFromVariantId(el, variantId);
-      } else {
-        // Fallback: find first purity variant available
-        const map = window.__variantPurityMap || {};
-        const firstKey = Object.keys(map)[0];
-        if (firstKey) {
-          const entry = map[firstKey];
-          render(el, calculate(entry.purity, entry.weight || cfg.goldWeight));
-        } else {
-          render(el, calculate('9K', cfg.goldWeight));
-        }
-      }
-    } else {
-      // No purity variants — use product purity or default 9K
-      const purity = cfg.productPurity || '9K';
-      render(el, calculate(purity, cfg.goldWeight));
-    }
+    // Calculate with product's gold weight (9K only, no variants)
+    render(el, calculate(cfg.goldWeight));
 
     // ── Accordion toggle ──────────────────────────────────────────────────────
     const btn     = el.querySelector('.gold-breakup-toggle');
@@ -338,52 +259,6 @@
       if (!open) content.removeAttribute('hidden');
       else content.setAttribute('hidden', '');
     });
-
-    if (!hasPurityVariant) return;
-
-    // ── Variant change listeners ──────────────────────────────────────────────
-
-    // METHOD 1: Horizon fires a custom 'variant:change' event with variant object
-    document.addEventListener('variant:change', function(e) {
-      const variant = e.detail?.variant;
-      if (!variant) return;
-      const purity = variant.title?.trim().toUpperCase();
-      if (VALID_PURITIES.includes(purity)) {
-        const entry = getPurityFromVariantId(variant.id) || { purity, weight: cfg.goldWeight };
-        render(el, calculate(entry.purity, entry.weight));
-      }
-    });
-
-    // METHOD 2: Horizon also dispatches 'change' on a hidden input[name="id"]
-    // This covers cases where METHOD 1 event doesn't fire
-    document.addEventListener('change', function(e) {
-      const t = e.target;
-      if (t && t.name === 'id') {
-        updateFromVariantId(el, t.value);
-      }
-    });
-
-    // METHOD 3: MutationObserver — watches hidden input value change
-    // Horizon sometimes sets input value programmatically (no 'change' event)
-    const hiddenInput = document.querySelector('input[name="id"]');
-    if (hiddenInput) {
-      let lastVal = hiddenInput.value;
-      const observer = new MutationObserver(function() {
-        if (hiddenInput.value !== lastVal) {
-          lastVal = hiddenInput.value;
-          updateFromVariantId(el, hiddenInput.value);
-        }
-      });
-      observer.observe(hiddenInput, { attributes: true, attributeFilter: ['value'] });
-
-      // Also poll every 300ms as final fallback (Horizon updates DOM directly)
-      setInterval(function() {
-        if (hiddenInput.value !== lastVal) {
-          lastVal = hiddenInput.value;
-          updateFromVariantId(el, hiddenInput.value);
-        }
-      }, 300);
-    }
   }
 
   if (document.readyState === 'loading') {

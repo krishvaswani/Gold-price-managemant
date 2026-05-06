@@ -9,7 +9,7 @@ export default function Home() {
   const [authed,    setAuthed]    = useState(false);
   const [password,  setPassword]  = useState('');
   const [authError, setAuthError] = useState('');
-  const [rates,     setRates]     = useState({ gold_rate_9k: '', gst_percent: '' });
+  const [rates,     setRates]     = useState({ gold_rate_9k: '', gst_percent: '3' });
   const [saving,    setSaving]    = useState(false);
   const [running,   setRunning]   = useState(false);
   const [log,       setLog]       = useState([]);
