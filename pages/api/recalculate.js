@@ -1,7 +1,5 @@
 import {
-  getAllProducts,
-  getProductMetafields,
-  getVariantMetafields,
+  getAllProductsWithMetafields,
   getShopMetafields,
   updateVariantPrice,
   calculatePrice,
@@ -36,9 +34,9 @@ export default async function handler(req, res) {
       return;
     }
 
-    // 2. Get all products
-    send({ type: 'status', message: 'Fetching all products...' });
-    const products = await getAllProducts();
+    // 2. Get all products with metafields
+    send({ type: 'status', message: 'Fetching all products and metafields...' });
+    const products = await getAllProductsWithMetafields();
     send({ type: 'total', count: products.length });
 
     let updated = 0;
@@ -46,7 +44,7 @@ export default async function handler(req, res) {
 
     for (const product of products) {
       try {
-        const productMetas = await getProductMetafields(product.id);
+        const productMetas = product.metafields || {};
 
         const goldWeight    = parseFloat(productMetas.gold_weight_grams)      || 0;
         const diamondValue  = parseFloat(productMetas.diamond_value)           || 0;
@@ -68,15 +66,18 @@ export default async function handler(req, res) {
           gstPercent,
         });
 
-        for (const variant of product.variants) {
-          await updateVariantPrice(variant.id, result.finalPrice);
+        // Update all variants in parallel, utilizing the robust 429 auto-retry wrapper
+        if (product.variants && product.variants.length > 0) {
+          await Promise.all(
+            product.variants.map(variant => updateVariantPrice(variant.id, result.finalPrice))
+          );
         }
 
         send({ type: 'product', name: product.title, status: 'updated' });
         updated++;
 
-        // Small delay to avoid Shopify rate limits
-        await new Promise(r => setTimeout(r, 300));
+        // Small delay to pace requests
+        await new Promise(r => setTimeout(r, 100));
 
       } catch (err) {
         send({ type: 'product', name: product.title, status: 'error', reason: err.message });
